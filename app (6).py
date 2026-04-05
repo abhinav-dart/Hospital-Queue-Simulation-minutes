@@ -218,24 +218,24 @@ def simulate(num_patients, arrival_rate, service_rate, num_doctors):
         )
         queue_length_over_time.append(lq)
 
-    # Step 4: build dataframe — divide by 60 to convert minutes → hours
+    # Step 4: build dataframe
     records = []
     for i in range(num_patients):
         records.append({
             "Patient": i + 1,
-            "Arrival (hr)": round(arrival_times[i] / 60, 4),
-            "Service Start (hr)": round(service_start_times[i] / 60, 4),
-            "Waiting Time (hr)": round(waiting_times[i] / 60, 4),
-            "Consultation (hr)": round(service_times[i] / 60, 4),
-            "Departure (hr)": round(departure_times[i] / 60, 4),
+            "Arrival (min)": round(arrival_times[i], 2),
+            "Service Start (min)": round(service_start_times[i], 2),
+            "Waiting Time (min)": round(waiting_times[i], 2),
+            "Consultation (min)": round(service_times[i], 2),
+            "Departure (min)": round(departure_times[i], 2),
         })
 
     df = pd.DataFrame(records)
     total_time = max(departure_times)
     total_svc = sum(service_times)
     utilization = total_svc / (num_doctors * total_time)
-    avg_wait = np.mean(waiting_times) / 60   # in hours
-    max_wait = np.max(waiting_times) / 60    # in hours
+    avg_wait = np.mean(waiting_times)
+    max_wait = np.max(waiting_times)
     avg_queue = np.mean(queue_length_over_time)
 
     return df, avg_wait, max_wait, utilization, avg_queue, queue_length_over_time
@@ -268,7 +268,7 @@ with c1:
     <div class="metric-card card-teal">
       <div class="metric-label">Avg Waiting Time</div>
       <div class="metric-value">{avg_wait:.1f}</div>
-      <div class="metric-unit">hours</div>
+      <div class="metric-unit">minutes</div>
     </div>""", unsafe_allow_html=True)
 
 with c2:
@@ -276,7 +276,7 @@ with c2:
     <div class="metric-card card-red">
       <div class="metric-label">Max Waiting Time</div>
       <div class="metric-value">{max_wait:.1f}</div>
-      <div class="metric-unit">hours</div>
+      <div class="metric-unit">minutes</div>
     </div>""", unsafe_allow_html=True)
 
 with c3:
@@ -319,12 +319,12 @@ left, right = st.columns(2)
 with left:
     st.markdown('<div class="chart-box">', unsafe_allow_html=True)
     fig1, ax1 = plt.subplots(figsize=(5.5, 3.4))
-    ax1.fill_between(df["Patient"], df["Waiting Time (hr)"], alpha=.18, color=COLORS["teal"])
-    ax1.plot(df["Patient"], df["Waiting Time (hr)"], color=COLORS["teal"], linewidth=1.6)
-    ax1.axhline(avg_wait, color=COLORS["amber"], linewidth=1.2, linestyle="--", label=f"Avg {avg_wait:.2f} hr")
+    ax1.fill_between(df["Patient"], df["Waiting Time (min)"], alpha=.18, color=COLORS["teal"])
+    ax1.plot(df["Patient"], df["Waiting Time (min)"], color=COLORS["teal"], linewidth=1.6)
+    ax1.axhline(avg_wait, color=COLORS["amber"], linewidth=1.2, linestyle="--", label=f"Avg {avg_wait:.1f} min")
     ax1.set_title("Waiting Time per Patient")
     ax1.set_xlabel("Patient Number")
-    ax1.set_ylabel("Wait (hr)")
+    ax1.set_ylabel("Wait (min)")
     ax1.legend(fontsize=8)
     ax1.grid(axis="y")
     plt.tight_layout()
@@ -370,14 +370,14 @@ with left2:
 with right2:
     st.markdown('<div class="chart-box">', unsafe_allow_html=True)
     fig4, ax4 = plt.subplots(figsize=(5.5, 3.4))
-    ax4.plot(df["Patient"], df["Arrival (hr)"], label="Arrival", color=COLORS["navy"], linewidth=1.5)
-    ax4.plot(df["Patient"], df["Service Start (hr)"], label="Service Start",
+    ax4.plot(df["Patient"], df["Arrival (min)"], label="Arrival", color=COLORS["navy"], linewidth=1.5)
+    ax4.plot(df["Patient"], df["Service Start (min)"], label="Service Start",
              color=COLORS["teal"], linewidth=1.5, linestyle="--")
-    ax4.fill_between(df["Patient"], df["Arrival (hr)"], df["Service Start (hr)"],
+    ax4.fill_between(df["Patient"], df["Arrival (min)"], df["Service Start (min)"],
                      alpha=.12, color=COLORS["red"], label="Gap = Wait")
     ax4.set_title("Arrival vs Service Start Timeline")
     ax4.set_xlabel("Patient Number")
-    ax4.set_ylabel("Time (hr)")
+    ax4.set_ylabel("Time (min)")
     ax4.legend(fontsize=8)
     ax4.grid(axis="y")
     plt.tight_layout()
@@ -424,7 +424,7 @@ with ia:
 - Each doctor handles **{service_rate * 60:.1f} patients/hour**
 - Total system capacity = **{num_doctors * service_rate * 60:.1f} patients/hour**
 - Patients arrive at **{arrival_rate * 60:.1f} patients/hour**
-- {num_patients} patients simulated — avg wait = **{avg_wait:.2f} hr**
+- {num_patients} patients simulated — avg wait = **{avg_wait:.1f} min**
 """)
 
 with ib:
@@ -494,9 +494,9 @@ This simulation is based on the **M/M/c Queue Model** — a standard mathematica
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"""
 **Current simulation values:**
-- λ = `{arrival_rate_hr}` patients/hr &nbsp;|&nbsp; μ = `{service_rate_hr}` patients/hr &nbsp;|&nbsp; c = `{num_doctors}` doctors
+- λ = `{arrival_rate:.4f}` patients/min &nbsp;|&nbsp; μ = `{service_rate:.4f}` patients/min &nbsp;|&nbsp; c = `{num_doctors}` doctors
 - ρ = `{rho:.3f}` → {"✅ Stable system" if rho < 1 else "⚠️ Unstable — queue grows without bound"}
-- Avg waiting time (Wq) = **{avg_wait:.2f} hr** &nbsp;|&nbsp; Total time (W) = **{(avg_wait + service_interval/60):.2f} hr**
+- Avg waiting time (Wq) = **{avg_wait:.2f} min** &nbsp;|&nbsp; Total time (W) = **{avg_wait + service_interval:.2f} min**
 """)
 
 # ─────────────────────────────────────────────
@@ -507,8 +507,8 @@ with st.expander("📖 Key Terms & Definitions"):
 | Term | Meaning |
 |---|---|
 | **M/M/c** | Queue model — Markov arrivals / Markov service / c servers |
-| **λ (lambda)** | Patient arrival rate (patients per hour) |
-| **μ (mu)** | Doctor service rate (patients served per hour) |
+| **λ (lambda)** | Patient arrival rate (patients per minute) |
+| **μ (mu)** | Doctor service rate (patients served per minute) |
 | **ρ (rho)** | Traffic intensity = λ / (c × μ) — measures system load |
 | **Wq** | Average time a patient spends waiting before being seen |
 | **Lq** | Average number of patients waiting in queue at any moment |
